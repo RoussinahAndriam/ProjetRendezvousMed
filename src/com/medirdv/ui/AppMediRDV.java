@@ -789,21 +789,63 @@ public class AppMediRDV extends JFrame {
     }
 
     private JPanel barreNavigation(String actif) {
-        String[] labels = {"🏠 Accueil", "🔍 Chercher", "📅 Mes RDV", "👤 Profil"};
+        // Chaque entrée : icône + label + nom de l'écran cible
+        String[][] items = {
+            {"🏠", "Accueil",   "ACCUEIL"},
+            {"🔍", "Chercher",  "RECHERCHE"},
+            {"📅", "Mes RDV",   "MES_RDV"},
+            {"👤", "Profil",    "PROFIL"}
+        };
+
         JPanel nav = new JPanel(new GridLayout(1, 4));
         nav.setBackground(BLANC);
         nav.setBorder(new MatteBorder(1, 0, 0, 0, GRIS_BORD));
         nav.setPreferredSize(new Dimension(420, 52));
-        for (String l : labels) {
-            JButton btn = new JButton("<html><center>" + l + "</center></html>");
+
+        for (String[] item : items) {
+            String icone  = item[0];
+            String label  = item[1];
+            String ecran  = item[2];
+            boolean estActif = ecran.equals(actif);
+
+            JButton btn = new JButton("<html><center>" + icone + "<br>" + label + "</center></html>");
             btn.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-            btn.setForeground(l.contains("Accueil") ? BLEU : TEXTE_MUTED);
+            btn.setForeground(estActif ? BLEU : TEXTE_MUTED);
             btn.setBackground(BLANC);
             btn.setBorderPainted(false);
             btn.setFocusPainted(false);
+            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            btn.addActionListener(e -> naviguerVers(ecran));
+
             nav.add(btn);
         }
         return nav;
+    }/**
+     * Navigation depuis la barre du bas.
+     * Pour l'instant, seuls ACCUEIL existe vraiment ; les autres affichent un message.
+     * On les créera dans les prochaines étapes.
+     */
+    private void naviguerVers(String nomEcran) {
+        switch (nomEcran) {
+            case "ACCUEIL":
+                cardLayout.show(panneauPrincipal, "ACCUEIL");
+                break;
+            case "RECHERCHE":
+                JOptionPane.showMessageDialog(this,
+                    "L'écran de recherche sera disponible dans une prochaine version.",
+                    "Bientôt disponible", JOptionPane.INFORMATION_MESSAGE);
+                break;
+            case "MES_RDV":
+                JOptionPane.showMessageDialog(this,
+                    "L'écran 'Mes rendez-vous' sera disponible dans une prochaine version.",
+                    "Bientôt disponible", JOptionPane.INFORMATION_MESSAGE);
+                break;
+            case "PROFIL":
+                JOptionPane.showMessageDialog(this,
+                    "L'écran 'Profil' sera disponible dans une prochaine version.",
+                    "Bientôt disponible", JOptionPane.INFORMATION_MESSAGE);
+                break;
+        }
     }
 
     // Helpers visuels
