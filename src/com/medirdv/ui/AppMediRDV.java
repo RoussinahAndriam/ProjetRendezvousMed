@@ -160,15 +160,35 @@ public class AppMediRDV extends JFrame {
         corps.add(labelSection("Médecins disponibles aujourd'hui"));
         corps.add(Box.createVerticalStrut(8));
 
-        // 2 médecins du jour
-        String[][] medecinsDuJour = {
-            {"DR", "Dr. Rakoto Jean", "Généraliste", "Disponible à 14h00", "Dispo"},
-            {"DS", "Dr. Soa Marie", "Cardiologue", "Disponible à 15h30", "Dispo"}
-        };
-        for (String[] m : medecinsDuJour) {
-            corps.add(carteMedecinSimple(m[0], m[1], m[2], m[3], m[4]));
-            corps.add(Box.createVerticalStrut(8));
-        }
+     // Charger les médecins depuis le serveur (BDD)
+     try {
+         Requete req = new Requete(Requete.Type.GET_MEDECINS, null);
+         Reponse rep = connexion.envoyer(req);
+
+         if (rep.isSucces()) {
+             @SuppressWarnings("unchecked")
+             List<Medecin> tous = (List<Medecin>) rep.getDonnees();
+
+             if (tous == null || tous.isEmpty()) {
+                 corps.add(labelInfo("Aucun médecin disponible."));
+             } else {
+                 // Afficher les 3 premiers (pour ne pas surcharger l'accueil)
+                 int limite = Math.min(3, tous.size());
+                 for (int i = 0; i < limite; i++) {
+                     corps.add(carteMedecinAccueil(tous.get(i)));
+                     corps.add(Box.createVerticalStrut(8));
+                 }
+             }
+         } else {
+             corps.add(labelInfo("Erreur : " + rep.getMessage()));
+         }
+     } catch (Exception e) {
+         corps.add(labelInfo("Serveur non disponible. Mode démo."));
+         // Mode démo : un exemple
+         Medecin demo = new Medecin(1, "Soa", "Marie", "Cardiologie",
+                 "Antananarivo", 4.9, 42, "Disponible");
+         corps.add(carteMedecinAccueil(demo));
+     }
 
         JScrollPane scroll = new JScrollPane(corps);
         scroll.setBorder(null);
@@ -252,6 +272,60 @@ public class AppMediRDV extends JFrame {
         panneauMedecins.add(carteMedecinDetaille(demo1));
         panneauMedecins.add(Box.createVerticalStrut(8));
         panneauMedecins.add(carteMedecinDetaille(demo2));
+    }/**
+     * Carte d'un médecin sur l'écran d'accueil.
+     * Cliquable → mène directement à l'écran des créneaux.
+     */
+    private JPanel carteMedecinAccueil(Medecin m) {
+        JPanel panel = new JPanel(new BorderLayout(10, 0));
+        panel.setBackground(BLANC);
+        panel.setBorder(new CompoundBorder(
+            new LineBorder(GRIS_BORD, 1, true),
+            new EmptyBorder(10, 12, 10, 12)
+        ));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Avatar avec initiales
+        JLabel avatar = creerAvatar(m.getInitiales(), BLEU_CLAIR, BLEU_TEXTE);
+        panel.add(avatar, BorderLayout.WEST);
+
+        // Infos (nom + spécialité + dispo)
+        JPanel infos = new JPanel();
+        infos.setBackground(BLANC);
+        infos.setLayout(new BoxLayout(infos, BoxLayout.Y_AXIS));
+        infos.add(bold(m.getNomComplet()));
+        infos.add(muted(m.getSpecialite() + " — " + m.getVille()));
+        boolean dispo = "Disponible".equalsIgnoreCase(m.getDisponibilite());
+        infos.add(new JLabel("<html><font color='" + (dispo ? "#059669" : "#DC2626") + "'>⏰ "
+                + (dispo ? "Disponible" : "Complet") + "</font></html>"));
+        panel.add(infos, BorderLayout.CENTER);
+
+        // Badge statut
+        panel.add(badge(dispo ? "Dispo" : "Complet",
+                dispo ? VERT_CLAIR : new Color(0xFEE2E2),
+                dispo ? new Color(0x166534) : ROUGE), BorderLayout.EAST);
+
+        // Clic → ouvrir les créneaux du médecin (seulement si dispo)
+        if (dispo) {
+            panel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    afficherCreneaux(m);
+                }
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    panel.setBackground(GRIS_CLAIR);
+                    infos.setBackground(GRIS_CLAIR);
+                }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    panel.setBackground(BLANC);
+                    infos.setBackground(BLANC);
+                }
+            });
+        }
+        return panel;
     }
 
     // ── ÉCRAN 3 : CRÉNEAUX ──────────────────────────
