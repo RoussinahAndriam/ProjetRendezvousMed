@@ -21,7 +21,7 @@ import java.util.List;
 public class MedecinDAO {
 
     public MedecinDAO() {
-        // Simple test de connexion au démarrage du serveur
+    	// Simple test de connexion au démarrage du serveur
         try (Connection c = ConnexionBD.getConnection()) {
             System.out.println("[SERVEUR] Connecté à MySQL (base medirdv).");
         } catch (SQLException e) {
@@ -64,6 +64,20 @@ public class MedecinDAO {
         }
         return result;
     }
+    public List<String> getToutesSpecialites() {
+        String sql = "SELECT DISTINCT specialite FROM medecins ORDER BY specialite";
+        List<String> result = new ArrayList<>();
+        try (Connection c = ConnexionBD.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.add(rs.getString("specialite"));
+            }
+        } catch (SQLException e) {
+            throw erreurBD(e);
+        }
+        return result;
+    }
 
     public List<String> getCreneaux(int medecinId) {
         String sql = "SELECT heure FROM creneaux WHERE medecin_id = ? ORDER BY heure";
@@ -80,6 +94,48 @@ public class MedecinDAO {
             throw erreurBD(e);
         }
         return result;
+    }
+    public List<String> getCreneauxDisponibles(int medecinId, String date) {
+        String sql = "SELECT heure FROM creneaux "
+                   + "WHERE medecin_id = ? "
+                   + "AND heure NOT IN ("
+                   + "    SELECT heure FROM rendez_vous "
+                   + "    WHERE medecin_id = ? AND date_rdv = ? AND statut = 'CONFIRME'"
+                   + ") "
+                   + "ORDER BY heure";
+        List<String> result = new ArrayList<>();
+        try (Connection c = ConnexionBD.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, medecinId);
+            ps.setInt(2, medecinId);
+            ps.setString(3, date);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(rs.getString("heure"));
+                }
+            }
+        } catch (SQLException e) {
+            throw erreurBD(e);
+        }
+        return result;
+    }
+    public boolean creneauEstDejaPris(int medecinId, String date, String heure) {
+        String sql = "SELECT COUNT(*) FROM rendez_vous "
+                   + "WHERE medecin_id = ? AND date_rdv = ? AND heure = ? AND statut = 'CONFIRME'";
+        try (Connection c = ConnexionBD.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, medecinId);
+            ps.setString(2, date);
+            ps.setString(3, heure);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            throw erreurBD(e);
+        }
+        return false;
     }
 
     public RendezVous creerRDV(RendezVous rdv) {
@@ -160,8 +216,8 @@ public class MedecinDAO {
         }
     }
 
-    // ── Utilitaires ────────────────────────────────
-
+   
+              // ── Utilitaires ────────────────────────────────
     private Medecin lireMedecin(ResultSet rs) throws SQLException {
         return new Medecin(
                 rs.getInt("id"),

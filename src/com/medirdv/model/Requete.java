@@ -10,12 +10,16 @@ public class Requete implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum Type {
-        GET_MEDECINS,          // Récupérer tous les médecins
+        GET_MEDECINS,  // Récupérer tous les médecins         
         GET_MEDECINS_SPECIALITE, // Filtrer par spécialité
-        GET_CRENEAUX,          // Récupérer créneaux d'un médecin
-        CREER_RDV,             // Créer un rendez-vous
+        GET_CRENEAUX,    // Récupérer créneaux d'un médecin       
+        GET_CRENEAUX_DATE, // Créneaux d'un médecin à une date donnée
+        CREER_RDV,               // Créer un rendez-vous
         GET_RDV_PATIENT,       // Historique RDV d'un patient
-        ANNULER_RDV            // Annuler un RDV
+        ANNULER_RDV ,             // Annuler un RDV
+        GET_SPECIALITES,  // Récupérer toutes les spécialités
+        GET_PATIENT_PAR_EMAIL,       // Chercher un patient par email
+        ENREGISTRER_PATIENT // Créer ou mettre à jour un patient
     }
 
     private Type type;
